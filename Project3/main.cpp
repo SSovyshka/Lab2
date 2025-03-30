@@ -36,7 +36,7 @@ void DrawGrid(HDC hdc) {
             FillRect(hdc, &rect, hBrush);
             DeleteObject(hBrush);
 
-            // Отображаем число в центре ячейки
+            
             wstring text = to_wstring(value);
             SetTextColor(hdc, RGB(255, 255, 255));
             SetBkMode(hdc, TRANSPARENT);
@@ -53,7 +53,9 @@ void DrawCharts(HDC hdc) {
     int centerX = GRID_SIZE * CELL_SIZE + 150;
     int centerY = 200;
     int radius = 100;
-    for (auto& pair : frequencies) { 
+    int innerRadius = 70; 
+
+    for (auto& pair : frequencies) {
         int percent = (pair.second * 360) / total;
         int endAngle = startAngle + percent;
         HBRUSH hBrush = CreateSolidBrush(RGB(rand() % 256, rand() % 256, rand() % 256));
@@ -66,7 +68,33 @@ void DrawCharts(HDC hdc) {
         DeleteObject(hBrush);
         startAngle = endAngle;
     }
+
+    int ringChartCenterY = centerY + 250;
+
+    startAngle = 0;
+    for (auto& pair : frequencies) {
+        int percent = (pair.second * 360) / total;
+        int endAngle = startAngle + percent;
+
+        HBRUSH hBrush = CreateSolidBrush(RGB(rand() % 256, rand() % 256, rand() % 256));
+        SelectObject(hdc, hBrush);
+
+        Pie(hdc, centerX - radius, ringChartCenterY - radius, centerX + radius, ringChartCenterY + radius,
+            centerX + radius * cos(startAngle * 3.14 / 180),
+            ringChartCenterY - radius * sin(startAngle * 3.14 / 180),
+            centerX + radius * cos(endAngle * 3.14 / 180),
+            ringChartCenterY - radius * sin(endAngle * 3.14 / 180));
+
+        DeleteObject(hBrush);
+        startAngle = endAngle;
+    }
+
+    HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+    SelectObject(hdc, whiteBrush);
+    Ellipse(hdc, centerX - innerRadius, ringChartCenterY - innerRadius, centerX + innerRadius, ringChartCenterY + innerRadius);
+    DeleteObject(whiteBrush);
 }
+
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
