@@ -13,8 +13,7 @@ int grid[GRID_SIZE][GRID_SIZE];
 std::map<int, int> frequencies;
 POINT lastMousePos = { 0, 0 };
 
-std::vector<wchar_t> typedChars;
-int charX = 100, charY = 100;
+std::vector<std::pair<wchar_t, POINT>> typedChars;
 
 using namespace std;
 
@@ -101,9 +100,7 @@ void ShowDeviceInfo(HDC hdc) {
     int widthMM = GetDeviceCaps(hdc, HORZSIZE);
     int heightMM = GetDeviceCaps(hdc, VERTSIZE);
 
-    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
+    int fontHeight = GetDeviceCaps(hdc, LOGPIXELSY);
     TEXTMETRIC tm;
     GetTextMetrics(hdc, &tm);
 
@@ -115,16 +112,15 @@ void ShowDeviceInfo(HDC hdc) {
     SetBkMode(hdc, TRANSPARENT);
 
     wchar_t buffer[512];
-    swprintf(buffer, 512,
-        L"Монітор: %d x %d мм\nРоздільна здатність: %d x %d пікселів\nШрифт: висота %d, міжстрок %d\nМиша: є=%d, кнопок=%d",
-        widthMM, heightMM, screenWidth, screenHeight, tm.tmHeight, tm.tmExternalLeading, hasMouse, buttons);
+    swprintf(buffer, 512, L"Монітор: %d x %d мм\nШрифт: висота %d, міжстрок %d\nМиша: є=%d, кнопок=%d",
+        widthMM, heightMM, tm.tmHeight, tm.tmExternalLeading, hasMouse, buttons);
     DrawText(hdc, buffer, -1, &infoRect, DT_LEFT);
 }
 
 void DrawTypedChars(HDC hdc) {
-    for (size_t i = 0; i < typedChars.size(); ++i) {
-        wchar_t ch[2] = { typedChars[i], 0 };
-        TextOut(hdc, charX + (i * 20), charY, ch, 1);
+    for (const auto& pair : typedChars) {
+        wchar_t ch[2] = { pair.first, 0 };
+        TextOut(hdc, pair.second.x, pair.second.y, ch, 1);
     }
 }
 
@@ -141,12 +137,12 @@ void RandomCharAtMouse(HWND hwnd) {
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
-    case WM_CHAR:
-        typedChars.push_back((wchar_t)wParam);
-        charX = rand() % 500;
-        charY = rand() % 500;
+    case WM_CHAR: {
+        POINT pt = { rand() % 800, rand() % 600 };
+        typedChars.push_back({ (wchar_t)wParam, pt });
         InvalidateRect(hwnd, NULL, TRUE);
         break;
+    }
 
     case WM_MOUSEMOVE: {
         POINT currentPos = { LOWORD(lParam), HIWORD(lParam) };
